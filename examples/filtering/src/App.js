@@ -76,7 +76,9 @@ function DefaultColumnFilter({
     <input
       value={filterValue || ''}
       onChange={e => {
+        console.log('before dispatch')
         setFilter(e.target.value || undefined) // Set undefined to remove the filter entirely
+        console.log('after dispatch')
       }}
       placeholder={`Search ${count} records...`}
     />
@@ -212,7 +214,7 @@ function fuzzyTextFilterFn(rows, id, filterValue) {
 fuzzyTextFilterFn.autoRemove = val => !val
 
 // Our table component
-function Table({ columns, data }) {
+function Table({ columns, data, filters, stateReducer }) {
   const filterTypes = React.useMemo(
     () => ({
       // Add a new fuzzyTextFilterFn filter type.
@@ -257,6 +259,8 @@ function Table({ columns, data }) {
       data,
       defaultColumn, // Be sure to pass the defaultColumn option
       filterTypes,
+      stateReducer,
+      initialState: { filters },
     },
     useFilters, // useFilters!
     useGlobalFilter // useGlobalFilter!
@@ -311,11 +315,6 @@ function Table({ columns, data }) {
       </table>
       <br />
       <div>Showing the first 20 results of {rows.length} rows</div>
-      <div>
-        <pre>
-          <code>{JSON.stringify(state.filters, null, 2)}</code>
-        </pre>
-      </div>
     </>
   )
 }
@@ -387,9 +386,25 @@ function App() {
 
   const data = React.useMemo(() => makeData(100000), [])
 
+  const [ filters, setFilters ] = React.useState([])
+  const filtersRef = React.useRef(filters)
+
+  function updateFilters (newState, action, prevState) {
+    if (action.type === 'setFilter') {
+      console.log(' in reducer')
+      setFilters(newState.filters)
+    }
+    return newState
+  }
+
   return (
     <Styles>
-      <Table columns={columns} data={data} />
+      <Table columns={columns} data={data} filters={filtersRef.current} stateReducer={updateFilters} />
+      <div>
+        <pre>
+          <code>{JSON.stringify(filters, null, 2)}</code>
+        </pre>
+      </div>
     </Styles>
   )
 }
